@@ -1,0 +1,129 @@
+---
+title: "pollution-report"
+author: "Omer Cofman"
+date: "April 27, 2016"
+output: pdf_document
+---
+
+This is a global dataset of 1571 locations where surface manta tows were conducted.
+
+Samples were divided into 4 size categories. Weights and particle counts were recorded for each category.
+
+Since the 4th categories of both weight and particle counts were mostly NA values, they were gone in the data cleaning operation.
+
+More attributes I cleaned out are Date, Sea State, Source (scientist), Info and Comments.
+
+We are left with the Latitude, Longitude, and 3 size categories by weights and particle counts.
+
+Attribute Information:
+
+1.  Latitude
+2.  Longitude
+3.  CD1: numeric, particle counts for debris between .335-.999 mm, units: [1/km^2]
+4.  CD2: numeric, particle counts for debris between 1.00-4.75 mm, units: [1/km^2]
+5.  CD3: numeric, particle counts for debris between 4.75-200 mm, units: [1/km^2]
+3.  WD1: numeric, particle weight for debris between .335-.999 mm, units: [g/km^2]
+4.  WD2: numeric, particle weight for debris between 1.00-4.75 mm, units: [g/km^2]
+5.  WD3: numeric, particle weight for debris between 4.75-200 mm, units: [g/km^2]
+
+```{r, echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+require(RCurl)
+
+#get the data
+data.uri = "https://raw.githubusercontent.com/AndrewSan/ex2-Plastic-Marine-Pollution-Global-Dataset/master/pollution.csv"
+data = read.csv(data.uri)
+
+```
+
+Let's see some data
+
+```{r}
+head(data);
+```
+
+As you can see in the next chunk, most of the values are zero
+
+```{r}
+summary(data)
+```
+
+Now we will display the debris on the world map.
+
+Each couple of maps corresponds to one of the particle counts columns.
+
+The size of the mark on the map is in proportion to the average size in mm and the weight of the debris
+
+CD1*WD1/.677
+
+```{r, echo=F, warning=F,message=F}
+require(ggmap)
+par(mfrow=c(1,2))
+map1 = get_map(location=c(lon=100+(mean(data$Longitude)),lat=mean(data$Latitude)),zoom=2,maptype="watercolor",scale=2)
+map2 = get_map(location=c(lon=(mean(data$Longitude)-85),lat=mean(data$Latitude)),zoom=2,maptype="watercolor",scale=2)
+#cd1
+ggmap(map1) + geom_point(data=data,aes(x=Longitude,y=Latitude,alph=0.1),size=log(data$cd1*data$wd1/.677/100),colour="darkred") + guides(fill=F,alpha=F,size=F)
+ggmap(map2) + geom_point(data=data,aes(x=Longitude,y=Latitude,alph=0.1),size=log(data$cd1*data$wd1/.677/100),colour="darkred") + guides(fill=F,alpha=F,size=F)
+```
+
+
+
+CD2*WD2/2.875
+
+```{r, echo=F, warning=F,message=F}
+ggmap(map1) + geom_point(data=data,aes(x=Longitude,y=Latitude,alph=0.1),size=log(data$cd2*data$wd2/2.875/100),colour="darkred") + guides(fill=F,alpha=F,size=F)
+ggmap(map2) + geom_point(data=data,aes(x=Longitude,y=Latitude,alph=0.1),size=log(data$cd2*data$wd2/2.875/100),colour="darkred") + guides(fill=F,alpha=F,size=F)
+```
+
+
+
+CD3*WD3/100
+
+```{r, echo=F, warning=F,message=F}
+ggmap(map1) + geom_point(data=data,aes(x=Longitude,y=Latitude,alph=0.1),size=log(data$cd3*data$wd3/100/100),colour="darkred") + guides(fill=F,alpha=F,size=F)
+ggmap(map2) + geom_point(data=data,aes(x=Longitude,y=Latitude,alph=0.1),size=log(data$cd3*data$wd3/100/100),colour="darkred") + guides(fill=F,alpha=F,size=F)
+```
+
+
+We learn that CD2 objects (1.00-4.75mm) are most of the volume of junk in the oceans.
+
+Now lets see what we can learn from splitting the data by longitude
+
+1. from 150 to 200
+2. from 50 to 150
+3. from 30 to 50
+4. from -80 to 30
+5. from -200 to -80
+
+```{r}
+data.1 = data[data$Longitude<200 & data$Longitude>150,]
+data.2 = data[data$Longitude<150 & data$Longitude>50,]
+data.3 = data[data$Longitude<50 & data$Longitude>30,]
+data.4 = data[data$Longitude<30 & data$Longitude>-80,]
+data.5 = data[data$Longitude<-80 & data$Longitude>-200,]
+mean(data.1$cd1*data.1$wd1/.677 + data.1$cd2*data.1$wd2/2.875 + data.1$cd3*data.1$wd3/100)
+mean(data.2$cd1*data.2$wd1/.677 + data.2$cd2*data.2$wd2/2.875 + data.2$cd3*data.2$wd3/100)
+mean(data.3$cd1*data.3$wd1/.677 + data.3$cd2*data.3$wd2/2.875 + data.3$cd3*data.3$wd3/100)
+mean(data.4$cd1*data.4$wd1/.677 + data.4$cd2*data.4$wd2/2.875 + data.4$cd3*data.4$wd3/100)
+mean(data.5$cd1*data.5$wd1/.677 + data.5$cd2*data.5$wd2/2.875 + data.5$cd3*data.5$wd3/100)
+```
+
+We see that the fith area (from -200 to -80) is the dirtiest.
+
+Unsurprisingly, it has the most of CD2 type debris
+
+```{r}
+sum(data.1$cd2)
+sum(data.2$cd2)
+sum(data.3$cd2)
+sum(data.4$cd2)
+sum(data.5$cd2)
+```
+
+
+
+
+
+
+
+
+
